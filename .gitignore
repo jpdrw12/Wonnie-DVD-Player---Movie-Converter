@@ -1,0 +1,7 @@
+*.mkv
+*.mp4
+*.avi
+*.log
+source/
+final_conversion_log.txt
+__pycache__/
