@@ -1,0 +1,57 @@
+name: Build and Package Multi-Platform Executables
+
+on:
+  push:
+    tags:
+      - 'v*' # Fires the automation rule whenever you push a tag like v1.0.0
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        # Spin up all 3 native virtual machines simultaneously in the cloud
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            artifact_name: Wonnie-Converter-Linux
+          - os: windows-latest
+            artifact_name: Wonnie-Converter-Windows.exe
+          - os: macos-latest
+            artifact_name: Wonnie-Converter-Mac
+            
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - name: Pull repository code down
+      uses: actions/checkout@v4
+
+    - name: Provision Python Runtime Environment
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install PyInstaller Compilation Tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+
+    - name: Freeze Python script into native single binary
+      run: |
+        pyinstaller --onefile --noconsole bulk_converter_gui.py
+
+    - name: Normalize multi-platform tracking names
+      shell: bash
+      run: |
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          mv dist/bulk_converter_gui.exe dist/${{ matrix.artifact_name }}
+        else
+          mv dist/bulk_converter_gui dist/${{ matrix.artifact_name }}
+        fi
+
+    - name: Ship individual binary assets up to the release cache
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: dist/${{ matrix.artifact_name }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
