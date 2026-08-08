@@ -5,6 +5,10 @@ on:
     tags:
       - 'v*' # Fires the automation rule whenever you push a tag like v1.0.0
 
+# Grant the workflow token explicit write access to manage repository releases
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
